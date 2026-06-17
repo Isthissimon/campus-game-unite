@@ -549,21 +549,6 @@ function Play() {
     } catch {}
   };
 
-  // D-pad handlers
-  const setDir = (dx: number, dy: number) => {
-    dpadRef.current = { dx: dx * 200, dy: dy * 200, active: dx !== 0 || dy !== 0 };
-  };
-  const dpadBtn = (label: string, dx: number, dy: number) => (
-    <button
-      onPointerDown={(e) => { e.preventDefault(); setDir(dx, dy); }}
-      onPointerUp={() => setDir(0, 0)}
-      onPointerLeave={() => { if (dpadRef.current.dx === dx * 200 && dpadRef.current.dy === dy * 200) setDir(0, 0); }}
-      onPointerCancel={() => setDir(0, 0)}
-      className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-background/80 backdrop-blur-md text-2xl font-bold active:scale-95 active:bg-card"
-    >
-      {label}
-    </button>
-  );
 
   return (
     <main className="relative h-screen w-screen overflow-hidden">
