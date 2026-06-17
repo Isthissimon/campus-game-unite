@@ -238,6 +238,29 @@ function Play() {
     };
     window.addEventListener("pointermove", onMove);
 
+    const keys = new Set<string>();
+    const updateDpadFromKeys = () => {
+      let dx = 0, dy = 0;
+      if (keys.has("ArrowUp") || keys.has("w") || keys.has("W")) dy -= 1;
+      if (keys.has("ArrowDown") || keys.has("s") || keys.has("S")) dy += 1;
+      if (keys.has("ArrowLeft") || keys.has("a") || keys.has("A")) dx -= 1;
+      if (keys.has("ArrowRight") || keys.has("d") || keys.has("D")) dx += 1;
+      dpadRef.current = { dx: dx * 200, dy: dy * 200, active: dx !== 0 || dy !== 0 };
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
+      keys.add(e.key);
+      updateDpadFromKeys();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      keys.delete(e.key);
+      updateDpadFromKeys();
+    };
+    const onBlur = () => { keys.clear(); updateDpadFromKeys(); };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
     let lastHudUpdate = 0;
     let broadcastEatBuffer: number[] = [];
     const eatFlush = setInterval(() => {
