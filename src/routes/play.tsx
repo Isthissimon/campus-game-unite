@@ -238,6 +238,29 @@ function Play() {
     };
     window.addEventListener("pointermove", onMove);
 
+    const keys = new Set<string>();
+    const updateDpadFromKeys = () => {
+      let dx = 0, dy = 0;
+      if (keys.has("ArrowUp") || keys.has("w") || keys.has("W")) dy -= 1;
+      if (keys.has("ArrowDown") || keys.has("s") || keys.has("S")) dy += 1;
+      if (keys.has("ArrowLeft") || keys.has("a") || keys.has("A")) dx -= 1;
+      if (keys.has("ArrowRight") || keys.has("d") || keys.has("D")) dx += 1;
+      dpadRef.current = { dx: dx * 200, dy: dy * 200, active: dx !== 0 || dy !== 0 };
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
+      keys.add(e.key);
+      updateDpadFromKeys();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      keys.delete(e.key);
+      updateDpadFromKeys();
+    };
+    const onBlur = () => { keys.clear(); updateDpadFromKeys(); };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
     let lastHudUpdate = 0;
     let broadcastEatBuffer: number[] = [];
     const eatFlush = setInterval(() => {
@@ -503,6 +526,9 @@ function Play() {
       clearInterval(eatFlush);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
     };
   }, [dead, room]);
 
@@ -523,21 +549,6 @@ function Play() {
     } catch {}
   };
 
-  // D-pad handlers
-  const setDir = (dx: number, dy: number) => {
-    dpadRef.current = { dx: dx * 200, dy: dy * 200, active: dx !== 0 || dy !== 0 };
-  };
-  const dpadBtn = (label: string, dx: number, dy: number) => (
-    <button
-      onPointerDown={(e) => { e.preventDefault(); setDir(dx, dy); }}
-      onPointerUp={() => setDir(0, 0)}
-      onPointerLeave={() => { if (dpadRef.current.dx === dx * 200 && dpadRef.current.dy === dy * 200) setDir(0, 0); }}
-      onPointerCancel={() => setDir(0, 0)}
-      className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-background/80 backdrop-blur-md text-2xl font-bold active:scale-95 active:bg-card"
-    >
-      {label}
-    </button>
-  );
 
   return (
     <main className="relative h-screen w-screen overflow-hidden">
@@ -592,19 +603,9 @@ function Play() {
         </div>
       </div>
 
-      {/* D-pad bottom-left */}
-      <div className="pointer-events-auto absolute bottom-6 left-6 z-20 select-none touch-none">
-        <div className="grid grid-cols-3 gap-1.5" style={{ width: "fit-content" }}>
-          <div />
-          {dpadBtn("▲", 0, -1)}
-          <div />
-          {dpadBtn("◀", -1, 0)}
-          <div className="h-14 w-14 rounded-xl border border-border/50 bg-background/40" />
-          {dpadBtn("▶", 1, 0)}
-          <div />
-          {dpadBtn("▼", 0, 1)}
-          <div />
-        </div>
+      {/* Controls hint bottom-left */}
+      <div className="pointer-events-none absolute bottom-6 left-6 z-20 panel rounded-xl px-4 py-2 text-xs font-mono text-muted-foreground">
+        Move: <span className="text-foreground">Arrow Keys</span> / <span className="text-foreground">WASD</span> / <span className="text-foreground">Cursor</span>
       </div>
 
       {/* Death overlay */}
