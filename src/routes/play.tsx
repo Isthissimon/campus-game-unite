@@ -603,19 +603,9 @@ function Play() {
         </div>
       </div>
 
-      {/* D-pad bottom-left */}
-      <div className="pointer-events-auto absolute bottom-6 left-6 z-20 select-none touch-none">
-        <div className="grid grid-cols-3 gap-1.5" style={{ width: "fit-content" }}>
-          <div />
-          {dpadBtn("▲", 0, -1)}
-          <div />
-          {dpadBtn("◀", -1, 0)}
-          <div className="h-14 w-14 rounded-xl border border-border/50 bg-background/40" />
-          {dpadBtn("▶", 1, 0)}
-          <div />
-          {dpadBtn("▼", 0, 1)}
-          <div />
-        </div>
+      {/* Controls hint bottom-left */}
+      <div className="pointer-events-none absolute bottom-6 left-6 z-20 panel rounded-xl px-4 py-2 text-xs font-mono text-muted-foreground">
+        Move: <span className="text-foreground">Arrow Keys</span> / <span className="text-foreground">WASD</span> / <span className="text-foreground">Cursor</span>
       </div>
 
       {/* Death overlay */}
