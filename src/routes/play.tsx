@@ -259,7 +259,10 @@ function Play() {
     const onBlur = () => { keys.clear(); updateDpadFromKeys(); };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
     window.addEventListener("blur", onBlur);
+    try { window.focus(); } catch {}
 
     let lastHudUpdate = 0;
     let broadcastEatBuffer: number[] = [];
@@ -528,6 +531,8 @@ function Play() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
   }, [dead, room]);
