@@ -50,6 +50,7 @@ function Play() {
   const [dead, setDead] = useState<null | { by: string }>(null);
 
   const myIdRef = useRef<string>(crypto.randomUUID());
+  const channelRef = useRef<any>(null);
   const hueRef = useRef<number>(HUES[Math.floor(Math.random() * HUES.length)]);
 
   // mutable game state held in refs to avoid React re-renders per frame
@@ -91,6 +92,8 @@ function Play() {
       channel = supabase.channel(`arena:${room}`, {
         config: { broadcast: { self: false }, presence: { key: myIdRef.current } },
       });
+      channelRef.current = channel;
+
 
       channel
         .on("broadcast", { event: "state" }, ({ payload }: any) => {
@@ -183,12 +186,11 @@ function Play() {
 
     let lastHudUpdate = 0;
     let broadcastEatBuffer: number[] = [];
-    let eatFlush = setInterval(async () => {
+    let eatFlush = setInterval(() => {
       if (!broadcastEatBuffer.length) return;
-      const ids = broadcastEatBuffer.splice(0);
-      const { supabase } = await import("@/integrations/supabase/client");
-      const ch = supabase.getChannels().find((c) => c.topic === `realtime:arena:${room}`);
+      const ch = channelRef.current;
       if (!ch) return;
+      const ids = broadcastEatBuffer.splice(0);
       for (const id of ids) {
         ch.send({ type: "broadcast", event: "eat-orb", payload: { id } });
       }
