@@ -361,6 +361,7 @@ function Play() {
           const f = Math.min(sp, bd) / bd;
           b.x += bdx * f; b.y += bdy * f;
         }
+        if (bd < 8) b.retargetAt = 0; // force pick a new target next frame
         b.x = Math.max(0, Math.min(WORLD, b.x));
         b.y = Math.max(0, Math.min(WORLD, b.y));
 
