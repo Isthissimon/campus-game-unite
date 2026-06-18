@@ -275,12 +275,15 @@ function Play() {
 
     let lastHudUpdate = 0;
     let broadcastEatBuffer: number[] = [];
+    let broadcastEatPlayerBuffer: string[] = [];
     const eatFlush = setInterval(() => {
-      if (!broadcastEatBuffer.length) return;
+      if (!broadcastEatBuffer.length && !broadcastEatPlayerBuffer.length) return;
       const ch = channelRef.current;
       if (!ch) return;
       const ids = broadcastEatBuffer.splice(0);
       for (const id of ids) ch.send({ type: "broadcast", event: "eat-orb", payload: { id } });
+      const pids = broadcastEatPlayerBuffer.splice(0);
+      for (const id of pids) ch.send({ type: "broadcast", event: "eat-player", payload: { id } });
     }, 100);
 
     const tick = (t: number) => {
