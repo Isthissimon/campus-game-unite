@@ -70,6 +70,11 @@ function Play() {
   const [leaderboard, setLeaderboard] = useState<{ name: string; mass: number; me: boolean }[]>([]);
   const [dead, setDead] = useState<null | { by: string }>(null);
   const [copied, setCopied] = useState(false);
+  const [codesOpen, setCodesOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [massInput, setMassInput] = useState("");
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
 
   const myIdRef = useRef<string>(crypto.randomUUID());
   const channelRef = useRef<any>(null);
@@ -211,7 +216,7 @@ function Play() {
       }
     };
     tick();
-    const iv = setInterval(tick, 3000);
+    const iv = setInterval(tick, 800);
     return () => clearInterval(iv);
   }, []);
 
@@ -361,6 +366,7 @@ function Play() {
           const f = Math.min(sp, bd) / bd;
           b.x += bdx * f; b.y += bdy * f;
         }
+        if (bd < 8) b.retargetAt = 0; // force pick a new target next frame
         b.x = Math.max(0, Math.min(WORLD, b.x));
         b.y = Math.max(0, Math.min(WORLD, b.y));
 
@@ -569,6 +575,80 @@ function Play() {
           Home
         </Link>
       </div>
+
+      {/* Secret Codes tab — top center */}
+      <div className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2">
+        <button
+          onClick={() => { setCodesOpen((v) => !v); setCodeMsg(null); }}
+          className="rounded-b-xl rounded-t-none border border-t-0 border-border bg-background/80 backdrop-blur-md px-5 py-2 font-mono text-xs uppercase tracking-[0.25em] font-bold shadow-lg transition hover:bg-background"
+          style={{ color: "var(--neon-pink)" }}
+        >
+          🔒 Secret Codes
+        </button>
+        {codesOpen && (
+          <div className="panel rounded-2xl p-4 w-[280px] flex flex-col gap-3">
+            {!unlocked ? (
+              <>
+                <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Enter code</label>
+                <input
+                  autoFocus
+                  type="password"
+                  inputMode="numeric"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (codeInput.trim() === "4123") { setUnlocked(true); setCodeMsg(null); }
+                      else setCodeMsg("Wrong code");
+                    }
+                  }}
+                  placeholder="••••"
+                  className="rounded-lg bg-input border border-border px-3 py-2 font-mono text-center tracking-[0.4em] text-lg"
+                />
+                <button
+                  onClick={() => {
+                    if (codeInput.trim() === "4123") { setUnlocked(true); setCodeMsg(null); }
+                    else setCodeMsg("Wrong code");
+                  }}
+                  className="btn-neon rounded-lg px-3 py-2 font-bold text-sm"
+                >Unlock</button>
+                {codeMsg && <div className="text-xs text-center" style={{ color: "var(--destructive)" }}>{codeMsg}</div>}
+              </>
+            ) : (
+              <>
+                <div className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "var(--neon-green)" }}>✓ Cheats unlocked</div>
+                <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Set mass (1–{MAX_MASS})</label>
+                <input
+                  type="number"
+                  value={massInput}
+                  onChange={(e) => setMassInput(e.target.value)}
+                  placeholder={String(hud.mass)}
+                  className="rounded-lg bg-input border border-border px-3 py-2 font-mono"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const n = Math.max(1, Math.min(MAX_MASS, Math.floor(Number(massInput) || 0)));
+                      if (n > 0) {
+                        stateRef.current.me.mass = n;
+                        setHud((h) => ({ ...h, mass: n }));
+                        setCodeMsg(`Mass set to ${n}`);
+                      }
+                    }}
+                    className="btn-neon rounded-lg px-3 py-2 font-bold text-sm flex-1"
+                  >Apply</button>
+                  <button
+                    onClick={() => { setUnlocked(false); setCodeInput(""); setMassInput(""); setCodeMsg(null); }}
+                    className="rounded-lg border border-border px-3 py-2 text-sm"
+                  >Lock</button>
+                </div>
+                {codeMsg && <div className="text-xs text-center text-muted-foreground">{codeMsg}</div>}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
 
       {/* HUD top-left (below back) */}
       <div className="pointer-events-none absolute top-[64px] left-4 panel rounded-2xl px-4 py-3">
