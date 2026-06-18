@@ -139,6 +139,10 @@ function Play() {
             stateRef.current.eatenOrbs.delete(payload.id);
           }, 4000);
         })
+        .on("broadcast", { event: "eat-player" }, ({ payload }: any) => {
+          stateRef.current.remote.delete(payload.id);
+          stateRef.current.bots.delete(payload.id);
+        })
         .on("broadcast", { event: "died" }, ({ payload }: any) => {
           stateRef.current.remote.delete(payload.id);
         })
