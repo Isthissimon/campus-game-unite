@@ -211,7 +211,7 @@ function Play() {
       }
     };
     tick();
-    const iv = setInterval(tick, 3000);
+    const iv = setInterval(tick, 800);
     return () => clearInterval(iv);
   }, []);
 
