@@ -70,6 +70,11 @@ function Play() {
   const [leaderboard, setLeaderboard] = useState<{ name: string; mass: number; me: boolean }[]>([]);
   const [dead, setDead] = useState<null | { by: string }>(null);
   const [copied, setCopied] = useState(false);
+  const [codesOpen, setCodesOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [massInput, setMassInput] = useState("");
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
 
   const myIdRef = useRef<string>(crypto.randomUUID());
   const channelRef = useRef<any>(null);
