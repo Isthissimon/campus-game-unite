@@ -139,6 +139,10 @@ function Play() {
             stateRef.current.eatenOrbs.delete(payload.id);
           }, 4000);
         })
+        .on("broadcast", { event: "eat-player" }, ({ payload }: any) => {
+          stateRef.current.remote.delete(payload.id);
+          stateRef.current.bots.delete(payload.id);
+        })
         .on("broadcast", { event: "died" }, ({ payload }: any) => {
           stateRef.current.remote.delete(payload.id);
         })
@@ -271,12 +275,15 @@ function Play() {
 
     let lastHudUpdate = 0;
     let broadcastEatBuffer: number[] = [];
+    let broadcastEatPlayerBuffer: string[] = [];
     const eatFlush = setInterval(() => {
-      if (!broadcastEatBuffer.length) return;
+      if (!broadcastEatBuffer.length && !broadcastEatPlayerBuffer.length) return;
       const ch = channelRef.current;
       if (!ch) return;
       const ids = broadcastEatBuffer.splice(0);
       for (const id of ids) ch.send({ type: "broadcast", event: "eat-orb", payload: { id } });
+      const pids = broadcastEatPlayerBuffer.splice(0);
+      for (const id of pids) ch.send({ type: "broadcast", event: "eat-player", payload: { id } });
     }, 100);
 
     const tick = (t: number) => {
@@ -388,36 +395,52 @@ function Play() {
         }
       }
 
-      // --- collisions: me vs remote ---
-      for (const p of s.remote.values()) {
-        const pr = massToRadius(p.mass);
-        const pdx = p.x - s.me.x, pdy = p.y - s.me.y;
-        const dist = Math.hypot(pdx, pdy);
-        if (dist < Math.max(r, pr) * 0.85) {
-          if (s.me.mass > p.mass * EAT_RATIO) {
-            s.me.mass = Math.min(MAX_MASS, s.me.mass + p.mass * 0.8);
-            s.remote.delete(p.id);
-          } else if (p.mass > s.me.mass * EAT_RATIO && !dead) {
-            setDead({ by: p.name });
-            return;
+      // --- collisions: higher mass eats lower mass ---
+      const entities: { id: string; x: number; y: number; mass: number; name: string; type: "me" | "remote" | "bot"; ref: any }[] = [];
+      entities.push({ id: myIdRef.current, x: s.me.x, y: s.me.y, mass: s.me.mass, name: s.me.name, type: "me", ref: s.me });
+      for (const p of s.remote.values()) entities.push({ id: p.id, x: p.x, y: p.y, mass: p.mass, name: p.name, type: "remote", ref: p });
+      for (const b of s.bots.values()) entities.push({ id: b.id, x: b.x, y: b.y, mass: b.mass, name: b.name, type: "bot", ref: b });
+
+      const eatenIds = new Set<string>();
+      for (let i = 0; i < entities.length; i++) {
+        const a = entities[i];
+        if (eatenIds.has(a.id)) continue;
+        const ar = massToRadius(a.mass);
+        for (let j = i + 1; j < entities.length; j++) {
+          const b = entities[j];
+          if (eatenIds.has(b.id)) continue;
+          const br = massToRadius(b.mass);
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < Math.max(ar, br) * 0.85) {
+            if (a.mass > b.mass) {
+              // a eats b
+              a.mass = Math.min(MAX_MASS, a.mass + b.mass);
+              eatenIds.add(b.id);
+              if (b.type === "me" && !dead) {
+                setDead({ by: a.name });
+                return;
+              }
+              if (a.type === "me") broadcastEatPlayerBuffer.push(b.id);
+            } else if (b.mass > a.mass) {
+              // b eats a
+              b.mass = Math.min(MAX_MASS, b.mass + a.mass);
+              eatenIds.add(a.id);
+              if (a.type === "me" && !dead) {
+                setDead({ by: b.name });
+                return;
+              }
+              if (b.type === "me") broadcastEatPlayerBuffer.push(a.id);
+              break; // a is gone, stop checking a against others
+            }
+            // equal mass: neither eats, let them overlap (no bounce to keep it simple)
           }
         }
       }
 
-      // --- collisions: me vs bots ---
-      for (const b of s.bots.values()) {
-        const br = massToRadius(b.mass);
-        const dx = b.x - s.me.x, dy = b.y - s.me.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < Math.max(r, br) * 0.85) {
-          if (s.me.mass > b.mass * EAT_RATIO) {
-            s.me.mass = Math.min(MAX_MASS, s.me.mass + b.mass * 0.8);
-            s.bots.delete(b.id);
-          } else if (b.mass > s.me.mass * EAT_RATIO && !dead) {
-            setDead({ by: b.name });
-            return;
-          }
-        }
+      for (const id of eatenIds) {
+        s.remote.delete(id);
+        s.bots.delete(id);
       }
 
       // --- camera ---
